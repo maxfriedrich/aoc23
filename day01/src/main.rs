@@ -83,6 +83,7 @@ treb7uchet";
         assert_eq!(solve1(input), 142);
     }
 
+    #[test]
     fn example2() {
         let input = "\
 two1nine
