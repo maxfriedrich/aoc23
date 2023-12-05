@@ -3,6 +3,13 @@ use std::{
     collections::HashSet,
 };
 
+fn parse_number_list(input: &str) -> Vec<u64> {
+    input
+        .split(' ')
+        .map(|num_str| num_str.parse().unwrap())
+        .collect()
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 struct Range {
     start: u64,
@@ -10,17 +17,17 @@ struct Range {
 }
 
 impl Range {
-    fn last(&self) -> u64 {
-        self.start + self.length - 1
+    fn end(&self) -> u64 {
+        self.start + self.length
     }
 
     fn overlap(&self, other: &Range) -> Option<Range> {
-        if self.start > other.last() || other.start > self.last() {
+        if self.start > other.end() || other.start > self.end() {
             None
         } else {
             let start = max(self.start, other.start);
-            let last = min(self.last(), other.last());
-            let length = last + 1 - start;
+            let end = min(self.end(), other.end());
+            let length = end - start;
             Some(Range { start, length })
         }
     }
@@ -73,35 +80,35 @@ impl Map {
                 return dest.start + (input_num - source.start);
             }
         }
-        return input_num;
+        input_num
     }
 
     fn get_range(&self, input_range: Range) -> Vec<Range> {
         // println!("Current mapping: {}", self.name);
-        let mut result = Vec::new();
-        let mut remaining = HashSet::new();
-        remaining.insert(input_range);
+        let mut result_ranges = Vec::new();
+        let mut remaining_ranges = HashSet::new();
+        remaining_ranges.insert(input_range);
 
         for range_mapping in &self.ranges {
             // println!("Processing range mapping: {:?}", &range_mapping);
-            for current_range in remaining.clone() {
+            for current_range in remaining_ranges.clone() {
                 // println!("  - Processing remaining range: {:?}", &current_range);
                 // println!("  - range mapping source: {:?}", &range_mapping.source);
                 if let Some(overlap) = range_mapping.source.overlap(&current_range) {
-                    remaining.remove(&current_range);
+                    remaining_ranges.remove(&current_range);
 
-                    // println!("  - Overlap found: {:?} - {}", &overlap, &overlap.last());
+                    // println!("  - Overlap found: {:?} - {}", &overlap, &overlap.end());
                     if overlap.start > current_range.start {
-                        remaining.insert(Range {
+                        remaining_ranges.insert(Range {
                             start: current_range.start,
                             length: overlap.start - current_range.start,
                         });
                     }
 
-                    if overlap.last() < current_range.last() {
-                        remaining.insert(Range {
-                            start: overlap.last() + 1,
-                            length: current_range.last() - overlap.last(),
+                    if overlap.end() < current_range.end() {
+                        remaining_ranges.insert(Range {
+                            start: overlap.end(),
+                            length: current_range.end() - overlap.end(),
                         });
                     }
 
@@ -110,17 +117,17 @@ impl Map {
                             + (overlap.start - range_mapping.source.start),
                         length: overlap.length,
                     };
-                    result.push(destination_range);
+                    result_ranges.push(destination_range);
                 }
             }
             // println!("- remaining ranges: {:?}", &remaining);
             // println!("- result ranges: {:?}", &result);
         }
-        for remaining_range in remaining {
-            result.push(remaining_range);
+        for remaining_range in remaining_ranges {
+            result_ranges.push(remaining_range);
         }
 
-        result
+        result_ranges
     }
 }
 
@@ -131,13 +138,6 @@ struct PuzzleInput {
     maps: Vec<Map>,
 }
 
-fn parse_number_list(input: &str) -> Vec<u64> {
-    input
-        .split(' ')
-        .map(|num_str| num_str.parse().unwrap())
-        .collect()
-}
-
 impl PuzzleInput {
     fn parse(input: &str) -> PuzzleInput {
         let mut parts = input.split("\n\n");
@@ -145,7 +145,7 @@ impl PuzzleInput {
         let seeds_1 = parts
             .next()
             .and_then(|s| s.strip_prefix("seeds: "))
-            .map(|s| parse_number_list(s))
+            .map(parse_number_list)
             .unwrap();
 
         let seeds_2 = seeds_1
@@ -189,7 +189,7 @@ fn solve2(input: &str) -> u64 {
     puzzle
         .seeds_2
         .into_iter()
-        .map(|seed_range| {
+        .flat_map(|seed_range| {
             let mut result = vec![seed_range];
             for map in &puzzle.maps {
                 result = result
@@ -199,8 +199,7 @@ fn solve2(input: &str) -> u64 {
             }
             result
         })
-        .flatten()
-        .map(|r| r.start)
+        .map(|range| range.start)
         .min()
         .unwrap()
 }
