@@ -1,4 +1,5 @@
 struct Card {
+    #[allow(dead_code)]
     id: i32,
     mine: Vec<i32>,
     winning: Vec<i32>,

@@ -35,7 +35,6 @@ fn first_and_last_digit_including_names(input: &str) -> u32 {
         .map(|(s, n)| (s.to_string(), n.clone()))
         .collect();
     digits.extend(digit_names);
-    dbg!(&digits);
 
     for (digit_str, digit) in digits {
         let digit_first_ind = input.find(&digit_str);

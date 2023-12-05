@@ -125,7 +125,7 @@ fn solve2(input: &str) -> i32 {
         .into_iter()
         .filter_map(|(coord, c)| if c == '*' { Some(coord) } else { None })
         .collect();
-    dbg!(&maybe_gear_coords.len());
+    // dbg!(&maybe_gear_coords.len());
 
     let part_numbers_to_surrounding: Vec<(i32, HashSet<Coord>)> = schematic
         .part_numbers
@@ -146,9 +146,9 @@ fn solve2(input: &str) -> i32 {
                     }
                 })
                 .collect();
-            if maybe_gear_coord.row == 1 {
-                dbg!(&maybe_gear_coord, &part_numbers_adjacent);
-            }
+            // if maybe_gear_coord.row == 1 {
+            // dbg!(&maybe_gear_coord, &part_numbers_adjacent);
+            // }
 
             if part_numbers_adjacent.len() == 2 {
                 Some(part_numbers_adjacent[0] * part_numbers_adjacent[1])
