@@ -79,17 +79,17 @@ impl Hand {
     }
 
     fn process(&self, card_value_fn: impl Fn(char) -> u32) -> ProcessedHand {
-        let card_values = self.cards.iter().copied().map(card_value_fn).collect();
+        let card_values: Vec<u32> = self.cards.iter().copied().map(card_value_fn).collect();
         let hand_type = compute_hand_type(&card_values);
 
         ProcessedHand {
-            hand_type: hand_type,
-            card_values: card_values,
+            hand_type,
+            card_values,
         }
     }
 }
 
-fn compute_hand_type(card_values: &Vec<u32>) -> HandType {
+fn compute_hand_type(card_values: &[u32]) -> HandType {
     // observation: it's optimal to replace jokers with the most common card
     let card_to_count = value_counts(card_values);
     let num_jokers = card_to_count.get(&JOKER_VALUE).unwrap_or(&0);
@@ -131,7 +131,7 @@ impl PartialOrd for ProcessedHand {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.hand_type.partial_cmp(&other.hand_type) {
             Some(core::cmp::Ordering::Equal) => self.card_values.partial_cmp(&other.card_values),
-            ord => return ord,
+            ord => ord,
         }
     }
 }
@@ -150,7 +150,7 @@ fn solve1(input: &str) -> u32 {
         .map(|(h, b)| (h.process(card_value_1), b))
         .collect();
 
-    hands_bids.sort_by(|(h1, _), (h2, _)| h1.partial_cmp(&h2).unwrap());
+    hands_bids.sort_by(|(h1, _), (h2, _)| h1.partial_cmp(h2).unwrap());
     hands_bids
         .iter()
         .enumerate()
@@ -165,7 +165,7 @@ fn solve2(input: &str) -> u32 {
         .map(|(h, b)| (h.process(card_value_2), b))
         .collect();
 
-    hands_bids.sort_by(|(h1, _), (h2, _)| h1.partial_cmp(&h2).unwrap());
+    hands_bids.sort_by(|(h1, _), (h2, _)| h1.partial_cmp(h2).unwrap());
     hands_bids
         .iter()
         .enumerate()
