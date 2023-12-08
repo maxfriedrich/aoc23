@@ -89,21 +89,37 @@ impl PuzzleInput {
     }
 }
 
-fn solve1(input: &str) -> u32 {
-    let puzzle = PuzzleInput::parse(input);
-
-    let mut current_node_id = &['A', 'A', 'A'];
+fn num_steps_to_node(
+    start_node_id: &NodeId,
+    network: &Network,
+    instructions: &[Direction],
+    node_match_fn: impl Fn(&NodeId) -> bool,
+) -> u64 {
+    let mut current_node_id = start_node_id;
     let mut num_steps = 0;
-    let mut instructions = puzzle.instructions.iter().cycle();
-    while current_node_id != &['Z', 'Z', 'Z'] {
+
+    let mut instructions = instructions.iter().cycle();
+
+    while !node_match_fn(current_node_id) {
         let direction = instructions.next().unwrap();
-        let current_node = puzzle.network.nodes.get(current_node_id).unwrap();
+        let current_node = network.nodes.get(current_node_id).unwrap();
 
         current_node_id = current_node.children.get(direction.value()).unwrap();
         num_steps += 1;
     }
 
     num_steps
+}
+
+fn solve1(input: &str) -> u64 {
+    let puzzle = PuzzleInput::parse(input);
+
+    num_steps_to_node(
+        &['A', 'A', 'A'],
+        &puzzle.network,
+        &puzzle.instructions,
+        |node_id| node_id == &['Z', 'Z', 'Z'],
+    )
 }
 
 // thanks for the help ChatGPT!
@@ -123,25 +139,6 @@ fn lcm(a: u64, b: u64) -> u64 {
     }
 }
 
-fn num_steps_to_z(node_id: &NodeId, network: &Network, instructions: &[Direction]) -> u64 {
-    // observation: the 1st time to get to Z is also the cycle time,
-    // so we're only computing the number of steps to get to Z the first time.
-    let mut current_node_id = node_id;
-    let mut num_steps = 0;
-
-    let mut instructions = instructions.iter().cycle();
-
-    while current_node_id.get(2).unwrap() != &'Z' {
-        let direction = instructions.next().unwrap();
-        let current_node = network.nodes.get(current_node_id).unwrap();
-
-        current_node_id = current_node.children.get(direction.value()).unwrap();
-        num_steps += 1;
-    }
-
-    num_steps
-}
-
 fn solve2(input: &str) -> u64 {
     let puzzle = PuzzleInput::parse(input);
 
@@ -150,7 +147,11 @@ fn solve2(input: &str) -> u64 {
         .nodes
         .keys()
         .filter(|k| k.get(2).unwrap() == &'A')
-        .map(|a_node| num_steps_to_z(a_node, &puzzle.network, &puzzle.instructions))
+        .map(|a_node| {
+            num_steps_to_node(a_node, &puzzle.network, &puzzle.instructions, |node_id| {
+                node_id.get(2).unwrap() == &'Z'
+            })
+        })
         .fold(1, lcm)
 }
 
