@@ -49,17 +49,6 @@ fn value_counts<T: std::marker::Copy + std::cmp::Eq + PartialEq + std::hash::Has
     })
 }
 
-#[derive(PartialEq, PartialOrd, Eq, Ord)]
-enum HandType {
-    FiveOfAKind = 7,
-    FourOfAKind = 6,
-    FullHouse = 5,
-    ThreeOfAKind = 4,
-    TwoPair = 3,
-    OnePair = 2,
-    HighCard = 1,
-}
-
 #[derive(Debug)]
 struct Hand {
     cards: Vec<char>,
@@ -67,7 +56,7 @@ struct Hand {
 
 #[derive(PartialEq, Eq)]
 struct ProcessedHand {
-    hand_type: HandType,
+    hand_type: Vec<usize>,
     card_values: Vec<u32>,
 }
 
@@ -89,8 +78,13 @@ impl Hand {
     }
 }
 
-fn compute_hand_type(card_values: &[u32]) -> HandType {
-    // observation: it's optimal to replace jokers with the most common card
+fn compute_hand_type(card_values: &[u32]) -> Vec<usize> {
+    // Observation: it's optimal to replace jokers with the most common card
+
+    // No need for a special hand type enum because the hand types have the same order
+    // that you can get by sorting the value counts:
+    // [5] > [4,1] > [3,2] > [3,1,1] > [2,2,1] > [2,1,1,1] > [1,1,1,1,1]
+
     let card_to_count = value_counts(card_values);
     let num_jokers = card_to_count.get(&JOKER_VALUE).unwrap_or(&0);
 
@@ -109,22 +103,7 @@ fn compute_hand_type(card_values: &[u32]) -> HandType {
     if let Some(most_common) = counts.first_mut() {
         *most_common += num_jokers;
     }
-
-    if counts.len() <= 1 {
-        HandType::FiveOfAKind
-    } else if counts.len() == 2 && counts[0] == 4 {
-        HandType::FourOfAKind
-    } else if counts.len() == 2 {
-        HandType::FullHouse
-    } else if counts.len() == 3 && counts[0] == 3 {
-        HandType::ThreeOfAKind
-    } else if counts.len() == 3 {
-        HandType::TwoPair
-    } else if counts.len() == 4 {
-        HandType::OnePair
-    } else {
-        HandType::HighCard
-    }
+    counts
 }
 
 impl PartialOrd for ProcessedHand {
