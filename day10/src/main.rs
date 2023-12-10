@@ -168,7 +168,6 @@ fn solve1(input: &str) -> usize {
 }
 
 fn expand_loop(tiles: &[Coord]) -> Vec<Coord> {
-    // insert connecting - and | tiles so there are tiles between ||
     let mut tiles_to_process = Vec::new();
     tiles_to_process.extend_from_slice(tiles);
     tiles_to_process.push(*tiles.first().unwrap());
@@ -196,24 +195,16 @@ fn solve2(input: &str) -> usize {
     let grid = parse_grid(input);
     let pipe_loop = find_loop(&grid);
 
-    let expanded_grid: HashMap<_, _> = grid
-        .iter()
-        .map(|(c, tile)| {
-            (
-                Coord {
-                    row: c.row * 2,
-                    col: c.col * 2,
-                },
-                tile,
-            )
-        })
-        .collect();
-
-    let max_row = expanded_grid.keys().map(|c| c.row).max().unwrap();
-    let max_col = expanded_grid.keys().map(|c| c.col).max().unwrap();
-    dbg!(&max_row, &max_col);
+    // Idea: make the loop 2x larger by inserting virtual tiles so || becomes |.|
+    // Then repeatedly check all non-loop tiles for reachability. A tile is reachable if:
+    // * a neighbor is reachable
+    // * it's on the grid border (= a neighbor is outside the grid)
 
     let expanded_loop: HashSet<Coord> = expand_loop(&pipe_loop).into_iter().collect();
+
+    let max_row = expanded_loop.iter().map(|c| c.row).max().unwrap();
+    let max_col = expanded_loop.iter().map(|c| c.col).max().unwrap();
+
     let mut non_loop: HashSet<Coord> = HashSet::new();
     for row in 0..max_row + 1 {
         for col in 0..max_col + 1 {
@@ -242,8 +233,6 @@ fn solve2(input: &str) -> usize {
                 .iter()
                 .any(|c| c.row < 0 || c.col < 0 || c.row > max_row || c.col > max_col);
             if reachable_neighbor || non_grid_neighbor {
-                // dbg!(coord, reachable_neighbor, non_grid_neighbor);
-                // dbg!(coord.neighbors());
                 reachable.insert(*coord);
                 done = false;
             }
@@ -257,7 +246,6 @@ fn solve2(input: &str) -> usize {
             col: c.col / 2,
         })
         .collect();
-    // dbg!(&unreachable_original);
     unreachable_original.len()
 }
 
