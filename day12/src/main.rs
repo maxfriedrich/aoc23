@@ -17,6 +17,7 @@ impl SpringCondition {
         }
     }
 
+    #[allow(dead_code)]
     fn char(&self) -> char {
         match self {
             Self::Operational => '.',
@@ -93,6 +94,7 @@ fn condition_segments(conditions: &[SpringCondition]) -> Vec<usize> {
 
 #[derive(Debug)]
 struct ConditionStats {
+    #[allow(dead_code)]
     num_operational: usize,
     num_damaged: usize,
     num_unknown: usize,
@@ -144,7 +146,8 @@ fn n_arrangements(conditions: Vec<SpringCondition>, segments: Vec<usize>) -> usi
 
     if stats.num_damaged > target_damaged {
         return 0;
-    } else if stats.num_damaged + stats.num_unknown < target_damaged {
+    }
+    if stats.num_damaged + stats.num_unknown < target_damaged {
         return 0;
     }
 
