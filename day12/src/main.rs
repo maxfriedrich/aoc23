@@ -1,4 +1,4 @@
-use rayon::prelude::*;
+use cached::proc_macro::cached;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 enum SpringCondition {
@@ -92,7 +92,6 @@ fn condition_segments(conditions: &[SpringCondition]) -> Vec<usize> {
 }
 
 #[derive(Debug)]
-
 struct ConditionStats {
     num_operational: usize,
     num_damaged: usize,
@@ -129,80 +128,12 @@ impl ConditionStats {
     }
 }
 
-fn unknown_as_operational(conditions: &[SpringCondition]) -> Vec<SpringCondition> {
-    conditions
-        .iter()
-        .map(|&c| {
-            if c == SpringCondition::Unknown {
-                SpringCondition::Operational
-            } else {
-                c
-            }
-        })
-        .collect()
-}
-
-fn print_conditions(conditions: &[SpringCondition]) {
-    println!(
-        "{}",
-        conditions
-            .iter()
-            .map(|c| c.char().to_string())
-            .collect::<Vec<String>>()
-            .join("")
-    );
-}
-
-fn n_arrangements_2(conditions: &[SpringCondition], segments: &[usize]) -> usize {
-    let stats = ConditionStats::from(conditions);
+#[cached]
+// memoization with "cached" requires taking ownership of parameters
+fn n_arrangements(conditions: Vec<SpringCondition>, segments: Vec<usize>) -> usize {
+    let stats = ConditionStats::from(&conditions);
     if stats.num_unknown == 0 {
-        // print_conditions(conditions);
-        // println!("finished evaluating");
-        if condition_segments(conditions) == segments {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-
-    let target_damaged = segments.iter().sum();
-    let max_segment_size = segments.iter().max().unwrap();
-
-    if stats.num_damaged > target_damaged {
-        // print_conditions(conditions);
-        // println!("short circuiting because num_damaged > target damaged");
-        0
-    } else if stats.num_damaged + stats.num_unknown < target_damaged {
-        // print_conditions(conditions);
-        // println!("short circuiting because num_damaged + num_unknown < target damaged");
-        0
-    } else if condition_segments(&unknown_as_operational(conditions))
-        .iter()
-        .any(|segment| segment > max_segment_size)
-    {
-        0
-    } else {
-        let first_unknown = conditions
-            .iter()
-            .position(|&c| c == SpringCondition::Unknown)
-            .unwrap();
-        let mut s1 = Vec::from(conditions);
-        let mut s2 = Vec::from(conditions);
-        s1[first_unknown] = SpringCondition::Damaged;
-        s2[first_unknown] = SpringCondition::Operational;
-
-        n_arrangements_2(&s1, segments) + n_arrangements_2(&s2, segments)
-    }
-}
-
-fn n_arrangements_3(conditions: &[SpringCondition], segments: &[usize]) -> usize {
-    // print_conditions(conditions);
-    // println!("{}", conditions.len());
-    let stats = ConditionStats::from(conditions);
-    if stats.num_unknown == 0 {
-        // print_conditions(conditions);
-        // println!("finished evaluating");
-        if condition_segments(conditions) == segments {
+        if condition_segments(&conditions) == segments {
             return 1;
         } else {
             return 0;
@@ -212,17 +143,13 @@ fn n_arrangements_3(conditions: &[SpringCondition], segments: &[usize]) -> usize
     let target_damaged = segments.iter().sum();
 
     if stats.num_damaged > target_damaged {
-        // print_conditions(conditions);
-        // println!("short circuiting because num_damaged > target damaged");
         return 0;
     } else if stats.num_damaged + stats.num_unknown < target_damaged {
-        // print_conditions(conditions);
-        // println!("short circuiting because num_damaged + num_unknown < target damaged");
         return 0;
     }
 
     let (fixed_conditions, remaining_conditions) = conditions.split_at(stats.fixed_until);
-    let mut fixed_segments = condition_segments(fixed_conditions);
+    let fixed_segments = condition_segments(fixed_conditions);
 
     if fixed_segments.len() > segments.len() {
         return 0;
@@ -242,62 +169,26 @@ fn n_arrangements_3(conditions: &[SpringCondition], segments: &[usize]) -> usize
     s1[first_unknown] = SpringCondition::Damaged;
     s2[first_unknown] = SpringCondition::Operational;
 
-    n_arrangements_3(&s1, todo_segments) + n_arrangements_3(&s2, todo_segments)
+    n_arrangements(s1, todo_segments.to_vec()) + n_arrangements(s2, todo_segments.to_vec())
 }
-
-// fn n_arrangements(conditions: &[SpringCondition], segments: &[usize]) -> usize {
-//     let first_unknown = conditions
-//         .iter()
-//         .position(|&c| c == SpringCondition::Unknown);
-
-//     match first_unknown {
-//         None => {
-//             if condition_segments(conditions) == segments {
-//                 1
-//             } else {
-//                 0
-//             }
-//         }
-//         Some(ind) => {
-//             let mut s1 = Vec::from(conditions);
-//             let mut s2 = Vec::from(conditions);
-//             s1[ind] = SpringCondition::Damaged;
-//             s2[ind] = SpringCondition::Operational;
-
-//             n_arrangements(&s1, segments) + n_arrangements(&s2, segments)
-//         }
-//     }
-// }
 
 fn solve1(input: &str) -> usize {
     let springs = input.lines().map(Spring::parse);
     springs
-        .map(|s| {
-            println!("+");
-            n_arrangements_3(&s.conditions, &s.damaged_segments)
-        })
+        .map(|s| n_arrangements(s.conditions, s.damaged_segments))
         .sum()
 }
 
 fn solve2(input: &str) -> usize {
-    let springs = input
-        .lines()
-        .map(Spring::parse_folded)
-        .enumerate()
-        .par_bridge();
+    let springs = input.lines().map(Spring::parse_folded);
     springs
-        .map(|(i, s)| {
-            let x = n_arrangements_3(&s.conditions, &s.damaged_segments);
-            println!("{} done", i);
-
-            x
-        })
+        .map(|s| n_arrangements(s.conditions, s.damaged_segments))
         .sum()
 }
 
 fn main() {
     let input = include_str!("input.txt");
-    // println!("{}", solve1(input));
+    println!("{}", solve1(input));
     println!("{}", solve2(input))
 }
 
@@ -350,17 +241,6 @@ mod tests {
 
     #[test]
     fn example2() {
-        let s1 = Spring::parse_folded(".??..??...?##. 1,1,3");
-        assert_eq!(
-            n_arrangements_3(&s1.conditions, &s1.damaged_segments),
-            16384
-        );
-
-        let s2 = Spring::parse_folded("?###???????? 3,2,1");
-        assert_eq!(
-            n_arrangements_3(&s2.conditions, &s2.damaged_segments),
-            506250
-        );
         assert_eq!(solve2(EXAMPLE), 525152);
     }
 }
