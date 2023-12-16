@@ -205,9 +205,16 @@ fn solve2(input: &str) -> u64 {
 }
 
 fn main() {
+    use aoc::Timer;
     let input = include_str!("input.txt");
-    println!("{}", solve1(input));
-    println!("{}", solve2(input))
+
+    let timer = Timer::new();
+    let result1 = solve1(input);
+    println!("Part 1: {} ({}ms)", result1, timer.elapsed().as_millis());
+
+    let timer = Timer::new();
+    let result2 = solve2(input);
+    println!("Part 2: {} ({}ms)", result2, timer.elapsed().as_millis());
 }
 
 #[cfg(test)]
