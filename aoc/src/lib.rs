@@ -15,3 +15,9 @@ impl Timer {
         Instant::now() - self.start
     }
 }
+
+impl Default for Timer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
