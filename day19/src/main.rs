@@ -345,24 +345,10 @@ fn num_accepted(parts: &Parts, workflows: &HashMap<&str, Workflow>) -> usize {
 fn solve2(input: &str) -> usize {
     let input = PuzzleInput::parse(input);
     let parts = Parts {
-        categories: [
-            CategoryRange {
-                start: 1,
-                end: 4001,
-            },
-            CategoryRange {
-                start: 1,
-                end: 4001,
-            },
-            CategoryRange {
-                start: 1,
-                end: 4001,
-            },
-            CategoryRange {
-                start: 1,
-                end: 4001,
-            },
-        ],
+        categories: [CategoryRange {
+            start: 1,
+            end: 4001,
+        }; 4],
     };
 
     num_accepted(&parts, &input.workflows)
